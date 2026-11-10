@@ -1,6 +1,6 @@
 {
   "name": "@bruce_young/dsh-file-explorer",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "DeepSeek Harness plugin: a VSCode-like file tree for a remote SSH directory, with inline image and streaming video preview, drag-and-drop upload and file operations.",
   "type": "module",
   "main": "lib/index.js",
@@ -28,12 +28,7 @@
       "patch": "./cordis.patch.yml"
     },
     "client": {
-      "platform": "web",
-      "inject": [
-        "@deepseek-ai/dsh-client-ui-layout",
-        "@deepseek-ai/dsh-client-locale",
-        "@deepseek-ai/dsh-client-ui-sidebar-right"
-      ]
+      "platform": "web"
     }
   },
   "keywords": [
