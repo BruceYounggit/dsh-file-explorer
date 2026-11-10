@@ -143,6 +143,20 @@ cordis.patch.example.yml
 
 改完 `lib/*.js` 不需要构建：重启插件条目（插件列表停用/启用）即可让 Host 重新 import、浏览器重新拉模块。改 `explorer.html` 只需刷新页面。
 
+## 排错：装了但左侧/右侧都没有入口
+
+宿主半边通常正常（`http://127.0.0.1:8910/` 能打开），缺的是浏览器那一半。按顺序检查：
+
+1. **插件是否被注册了两次**
+   `dsh.profile.bundles` 里有这个包，同时 `cordis.patch.yml` 里又有一条 `insert` 指向它，会让加载器把条目标成 `unaddressable`，客户端模块随之不加载。
+   **只保留一种**：要么从 `bundles` 里删掉、只留 patch 的 `insert`；要么反过来。
+
+2. **模块 id 是否等于包名**
+   `lib/client.js` 第一行 `window.__ModuleLoader__.load({ id: ... })` 的 id 必须和 `package.json` 的 `name` **完全一致**（含 scope）。改名后忘了同步这一行，就会宿主能跑、界面全无。
+
+3. **是否真的重启过应用**
+   `dsh.profile.bundles` 与条目名只在启动时读取；关窗口再打开不等于重启，要从托盘退出后重新启动。
+
 ## License
 
 MIT
