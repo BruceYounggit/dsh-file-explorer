@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>服务器文件</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --hover: #f3f4f6;
+    --active: #e8f0fe;
+    --accent: #2563eb;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1e;
+      --fg: #d4d4d4;
+      --muted: #9ca3af;
+      --line: #333333;
+      --hover: #2a2d2e;
+      --active: #094771;
+      --accent: #4d9cf8;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font: 13px/1.45 -apple-system, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+    overflow: hidden;
+  }
+  .app { display: flex; flex-direction: column; height: 100%; }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--line);
+    flex: none;
+  }
+  .path {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    font: 12px/1.45 ui-monospace, Consolas, monospace;
+    padding: 3px 7px;
+    border-radius: 5px;
+  }
+  .path:hover { border-color: var(--line); }
+  .path:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--bg);
+  }
+  header button {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: inherit;
+    border-radius: 5px;
+    padding: 3px 9px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  header button:hover { background: var(--hover); }
+  .main { flex: 1; display: flex; min-height: 0; }
+  .tree {
+    width: 290px;
+    flex: none;
+    overflow: auto;
+    border-right: 1px solid var(--line);
+    padding: 4px 0;
+  }
+  .preview { flex: 1; min-width: 0; overflow: auto; display: flex; flex-direction: column; }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px 3px 0;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .row:hover { background: var(--hover); }
+  .row.selected { background: var(--active); }
+  .chev {
+    width: 14px;
+    flex: none;
+    text-align: center;
+    color: var(--muted);
+    font-size: 10px;
+    transition: transform .12s ease;
+  }
+  .chev.open { transform: rotate(90deg); }
+  .ico { width: 16px; flex: none; text-align: center; font-size: 12px; }
+  .name { overflow: hidden; text-overflow: ellipsis; }
+  .size { margin-left: auto; color: var(--muted); font-size: 11px; padding-left: 8px; }
+  .children { }
+  .hint { margin: auto; color: var(--muted); font-size: 13px; padding: 24px; }
+  .pv-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--line);
+    flex: none;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .pv-head a { color: var(--accent); text-decoration: none; }
+  .pv-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; display: flex; justify-content: center; }
+  .pv-body img, .pv-body video { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .pv-body pre {
+    width: 100%;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font: 12px/1.5 ui-monospace, Consolas, monospace;
+  }
+  .empty { color: var(--muted); padding: 6px 8px 6px 34px; font-size: 12px; }
+  .err { color: #d9534f; padding: 6px 8px 6px 34px; font-size: 12px; }
+  .spinner { color: var(--muted); padding: 6px 8px 6px 34px; font-size: 12px; }
+  .row.drop-target {
+    background: var(--active);
+    outline: 1px dashed var(--accent);
+    outline-offset: -2px;
+  }
+  .tree.dragging {
+    outline: 2px dashed var(--accent);
+    outline-offset: -4px;
+  }
+  #toast {
+    position: fixed;
+    right: 14px;
+    bottom: 14px;
+    max-width: 380px;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--fg);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
+    font-size: 12px;
+    display: none;
+    z-index: 10;
+  }
+  #toast.show { display: block; }
+  #toast .bar {
+    height: 3px;
+    margin-top: 6px;
+    border-radius: 2px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  #toast .bar > i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--accent);
+    transition: width .1s linear;
+  }
+  #toast.error { border-color: #d9534f; }
+  #menu {
+    position: fixed;
+    z-index: 20;
+    min-width: 186px;
+    padding: 4px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .22);
+    display: none;
+  }
+  #menu.show { display: block; }
+  #menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  #menu button:hover { background: var(--hover); }
+  #menu button.danger { color: #d9534f; }
+  #menu .sep { height: 1px; margin: 4px 6px; background: var(--line); }
+  #dialog-mask {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, .3);
+  }
+  #dialog-mask.show { display: flex; }
+  #dialog {
+    width: 360px;
+    max-width: calc(100vw - 32px);
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--fg);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, .3);
+  }
+  #dialog h3 { margin: 0 0 6px; font-size: 13px; }
+  #dialog p { margin: 0 0 10px; font-size: 12px; color: var(--muted); word-break: break-all; }
+  #dialog input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+  }
+  #dialog .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  #dialog .actions button {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: inherit;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  #dialog .actions button.primary { background: var(--accent); border-color: transparent; color: #fff; }
+  #dialog .actions button.danger { background: #d9534f; border-color: transparent; color: #fff; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <button id="up" title="上一级目录">↑</button>
+    <input id="path" class="path" spellcheck="false" autocomplete="off" title="输入绝对路径后按回车跳转">
+    <button id="refresh" title="重新加载当前目录">刷新</button>
+  </header>
+  <div class="main">
+    <div class="tree" id="tree"></div>
+    <div class="preview" id="preview">
+      <div class="hint">从左侧选择文件，图片和视频会直接预览<br>也可以把本地文件拖进来上传</div>
+    </div>
+  </div>
+</div>
+<div id="toast"><span id="toast-text"></span><div class="bar"><i id="toast-bar"></i></div></div>
+<div id="menu"></div>
+<div id="dialog-mask">
+  <div id="dialog">
+    <h3 id="dialog-title"></h3>
+    <p id="dialog-hint"></p>
+    <input id="dialog-input" spellcheck="false" autocomplete="off">
+    <div class="actions">
+      <button id="dialog-cancel" type="button">取消</button>
+      <button id="dialog-ok" type="button" class="primary">确定</button>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var ROOT = __ROOT__;
+  var current = ROOT;
+  var treeEl = document.getElementById("tree");
+  var previewEl = document.getElementById("preview");
+  var pathEl = document.getElementById("path");
+
+  var IMAGE = ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "ico", "avif"];
+  var VIDEO = ["mp4", "webm", "mov", "mkv", "avi", "m4v"];
+  var AUDIO = ["mp3", "wav", "ogg", "m4a", "flac"];
+  var TEXT = ["txt", "md", "json", "yml", "yaml", "js", "ts", "jsx", "tsx", "py", "sh", "css",
+              "html", "htm", "xml", "ini", "cfg", "conf", "log", "csv", "toml", "c", "h", "cpp",
+              "hpp", "java", "go", "rs", "sql", "gitignore", "env"];
+
+  function ext(name) {
+    var i = name.lastIndexOf(".");
+    return i < 0 ? "" : name.slice(i + 1).toLowerCase();
+  }
+
+  function human(bytes) {
+    if (!bytes && bytes !== 0) return "";
+    var units = ["B", "KB", "MB", "GB", "TB"];
+    var value = bytes, index = 0;
+    while (value >= 1024 && index < units.length - 1) { value /= 1024; index++; }
+    return (index === 0 ? value : value.toFixed(value >= 10 ? 0 : 1)) + " " + units[index];
+  }
+
+  function icon(entry) {
+    if (entry.dir) return "📁";
+    var type = ext(entry.name);
+    if (IMAGE.indexOf(type) >= 0) return "🖼";
+    if (VIDEO.indexOf(type) >= 0) return "🎬";
+    if (AUDIO.indexOf(type) >= 0) return "🎵";
+    if (TEXT.indexOf(type) >= 0) return "📄";
+    return "📦";
+  }
+
+  function note(text, cls) {
+    var el = document.createElement("div");
+    el.className = cls;
+    el.textContent = text;
+    return el;
+  }
+
+  var toastEl = document.getElementById("toast");
+  var toastText = document.getElementById("toast-text");
+  var toastBar = document.getElementById("toast-bar");
+  var toastTimer = null;
+
+  function toast(message, percent, isError) {
+    toastEl.className = "show" + (isError ? " error" : "");
+    toastText.textContent = message;
+    toastBar.style.width = (percent === undefined ? 100 : Math.max(0, Math.min(100, percent))) + "%";
+    clearTimeout(toastTimer);
+    if (percent === undefined) {
+      toastTimer = setTimeout(function () { toastEl.className = ""; }, 2600);
+    }
+  }
+
+  function uploadOne(file, dir) {
+    return new Promise(function (resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/upload?path=" + encodeURIComponent(dir) + "&name=" + encodeURIComponent(file.name));
+      xhr.upload.onprogress = function (event) {
+        if (event.lengthComputable) {
+          toast("正在上传 " + file.name, (event.loaded / event.total) * 100);
+        }
+      };
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+          return;
+        }
+        var detail = "";
+        try { detail = JSON.parse(xhr.responseText).error || ""; } catch (error) { detail = ""; }
+        reject(new Error(detail || ("HTTP " + xhr.status)));
+      };
+      xhr.onerror = function () { reject(new Error("网络错误")); };
+      xhr.send(file);
+    });
+  }
+
+  function uploadAll(files, dir) {
+    if (!files || !files.length) return;
+    var total = files.length;
+    var index = 0;
+
+    function next() {
+      if (index >= total) {
+        toast("已上传 " + total + " 个文件到 " + dir, undefined);
+        dropDir = null;
+        boot(current);
+        return;
+      }
+      var file = files[index];
+      toast("(" + (index + 1) + "/" + total + ") 正在上传 " + file.name, 0);
+      uploadOne(file, dir).then(function () {
+        index += 1;
+        next();
+      }).catch(function (error) {
+        toast("上传失败 " + file.name + "：" + error.message, undefined, true);
+      });
+    }
+    next();
+  }
+
+  function bindDropTarget(row, dir) {
+    row.addEventListener("dragenter", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      dropDir = dir;
+      row.classList.add("drop-target");
+    });
+    row.addEventListener("dragover", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      dropDir = dir;
+    });
+    row.addEventListener("dragleave", function () {
+      row.classList.remove("drop-target");
+      if (dropDir === dir) dropDir = null;
+    });
+    row.addEventListener("drop", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      row.classList.remove("drop-target");
+      dropDir = null;
+      uploadAll(event.dataTransfer && event.dataTransfer.files, dir);
+    });
+  }
+
+  // ---- context menu, dialogs and write actions -------------------------------
+  var menuEl = document.getElementById("menu");
+  var maskEl = document.getElementById("dialog-mask");
+  var dialogTitle = document.getElementById("dialog-title");
+  var dialogHint = document.getElementById("dialog-hint");
+  var dialogInput = document.getElementById("dialog-input");
+  var dialogOk = document.getElementById("dialog-ok");
+  var dialogCancel = document.getElementById("dialog-cancel");
+
+  /** Small in-page dialog (sandboxed iframes cannot use window.prompt/confirm). */
+  function ask(options) {
+    return new Promise(function (resolve) {
+      dialogTitle.textContent = options.title || "";
+      dialogHint.textContent = options.hint || "";
+      dialogHint.style.display = options.hint ? "block" : "none";
+      dialogInput.style.display = options.input === false ? "none" : "block";
+      dialogInput.value = options.value || "";
+      dialogOk.textContent = options.okText || "确定";
+      dialogOk.className = options.danger ? "danger" : "primary";
+      maskEl.classList.add("show");
+      if (options.input !== false) {
+        dialogInput.focus();
+        dialogInput.select();
+      }
+
+      function cleanup(result) {
+        maskEl.classList.remove("show");
+        dialogOk.removeEventListener("click", onOk);
+        dialogCancel.removeEventListener("click", onCancel);
+        maskEl.removeEventListener("click", onMask);
+        document.removeEventListener("keydown", onKey);
+        resolve(result);
+      }
+      function onOk() { cleanup(options.input === false ? true : dialogInput.value.trim()); }
+      function onCancel() { cleanup(null); }
+      function onMask(event) { if (event.target === maskEl) cleanup(null); }
+      function onKey(event) {
+        if (event.key === "Enter") { event.preventDefault(); onOk(); }
+        else if (event.key === "Escape") { event.preventDefault(); onCancel(); }
+      }
+      dialogOk.addEventListener("click", onOk);
+      dialogCancel.addEventListener("click", onCancel);
+      maskEl.addEventListener("click", onMask);
+      document.addEventListener("keydown", onKey);
+    });
+  }
+
+  function postJson(url) {
+    return fetch(url, { method: "POST" }).then(function (response) {
+      return response.json().catch(function () { return {}; }).then(function (payload) {
+        if (!response.ok) throw new Error(payload.error || ("HTTP " + response.status));
+        return payload;
+      });
+    });
+  }
+
+  function relativePath(path) {
+    var base = ROOT.replace(/\/+$/, "");
+    if (base && path.indexOf(base + "/") === 0) return path.slice(base.length + 1);
+    return path.replace(/^\//, "");
+  }
+
+  function legacyCopy(text) {
+    return new Promise(function (resolve, reject) {
+      var area = document.createElement("textarea");
+      area.value = text;
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (error) { ok = false; }
+      document.body.removeChild(area);
+      if (ok) resolve(); else reject(new Error("execCommand copy blocked"));
+    });
+  }
+
+  /** Last resort: ask the host to write the OS clipboard (iframe policies cannot block this). */
+  function hostCopy(text) {
+    return fetch("/api/clipboard", { method: "POST", body: text }).then(function (response) {
+      if (!response.ok) throw new Error("HTTP " + response.status);
+    });
+  }
+
+  function copyText(text) {
+    var attempt;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      attempt = navigator.clipboard.writeText(text).catch(function () { return legacyCopy(text); });
+    } else {
+      attempt = legacyCopy(text);
+    }
+    return attempt.catch(function () { return hostCopy(text); });
+  }
+
+  function hideMenu() { menuEl.className = ""; }
+
+  function menuButton(label, handler, danger) {
+    var button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    if (danger) button.className = "danger";
+    button.addEventListener("click", function (event) {
+      event.stopPropagation();
+      hideMenu();
+      handler();
+    });
+    menuEl.appendChild(button);
+  }
+
+  function menuSeparator() {
+    var line = document.createElement("div");
+    line.className = "sep";
+    menuEl.appendChild(line);
+  }
+
+  function actRename(entry) {
+    ask({ title: "重命名", hint: entry.path, value: entry.name }).then(function (name) {
+      if (!name || name === entry.name) return;
+      postJson("/api/rename?path=" + encodeURIComponent(entry.path) + "&name=" + encodeURIComponent(name))
+        .then(function () { toast("已重命名为 " + name); boot(current); })
+        .catch(function (error) { toast("重命名失败：" + error.message, undefined, true); });
+    });
+  }
+
+  function actMove(entry) {
+    ask({ title: "移动到目录", hint: "输入目标目录的绝对路径：" + entry.name, value: current }).then(function (to) {
+      if (!to) return;
+      postJson("/api/move?path=" + encodeURIComponent(entry.path) + "&to=" + encodeURIComponent(to))
+        .then(function (payload) { toast("已移动到 " + payload.path); boot(current); })
+        .catch(function (error) { toast("移动失败：" + error.message, undefined, true); });
+    });
+  }
+
+  function actDelete(entry) {
+    ask({
+      title: "删除",
+      hint: "确认删除 " + entry.path + (entry.dir ? "（目录会连同内容一起删除）" : ""),
+      input: false,
+      okText: "删除",
+      danger: true
+    }).then(function (confirmed) {
+      if (!confirmed) return;
+      postJson("/api/delete?path=" + encodeURIComponent(entry.path))
+        .then(function () { toast("已删除 " + entry.name); boot(current); })
+        .catch(function (error) { toast("删除失败：" + error.message, undefined, true); });
+    });
+  }
+
+  function actNewFolder(dir) {
+    ask({ title: "新建文件夹", hint: dir, value: "新建文件夹" }).then(function (name) {
+      if (!name) return;
+      postJson("/api/mkdir?path=" + encodeURIComponent(dir) + "&name=" + encodeURIComponent(name))
+        .then(function (payload) { toast("已创建 " + payload.path); boot(current); })
+        .catch(function (error) { toast("新建失败：" + error.message, undefined, true); });
+    });
+  }
+
+  function actCopy(label, text) {
+    copyText(text)
+      .then(function () { toast("已复制" + label + "：" + text); })
+      .catch(function (error) { toast("复制失败：" + error.message, undefined, true); });
+  }
+
+  function showMenu(entry, x, y) {
+    menuEl.innerHTML = "";
+    if (entry) {
+      if (!entry.dir) menuButton("预览", function () { openFile(entry); });
+      menuButton("复制绝对路径", function () { actCopy("绝对路径", entry.path); });
+      menuButton("复制相对路径", function () { actCopy("相对路径", relativePath(entry.path)); });
+      menuSeparator();
+      menuButton("重命名", function () { actRename(entry); });
+      menuButton("移动到…", function () { actMove(entry); });
+      menuSeparator();
+      if (entry.dir) menuButton("在此新建文件夹", function () { actNewFolder(entry.path); });
+      menuButton("删除", function () { actDelete(entry); }, true);
+    } else {
+      menuButton("新建文件夹", function () { actNewFolder(current); });
+      menuButton("复制当前目录路径", function () { actCopy("目录路径", current); });
+      menuButton("刷新", function () { boot(current); });
+    }
+    menuEl.className = "show";
+    var width = menuEl.offsetWidth;
+    var height = menuEl.offsetHeight;
+    menuEl.style.left = Math.min(x, window.innerWidth - width - 8) + "px";
+    menuEl.style.top = Math.min(y, window.innerHeight - height - 8) + "px";
+  }
+
+  document.addEventListener("click", hideMenu);
+  document.addEventListener("scroll", hideMenu, true);
+  window.addEventListener("resize", hideMenu);
+  window.addEventListener("blur", hideMenu);
+
+  function normalize(path) {
+    var value = (path || "").trim();
+    if (!value) return ROOT;
+    if (value.charAt(0) !== "/") value = "/" + value;
+    value = value.replace(/\/{2,}/g, "/");
+    if (value.length > 1) value = value.replace(/\/+$/, "");
+    return value;
+  }
+
+  function showPath(path) {
+    pathEl.value = path;
+  }
+
+  function loadDir(path) {
+    return fetch("/api/list?path=" + encodeURIComponent(path))
+      .then(function (response) {
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        return response.json();
+      });
+  }
+
+  function makeDirRow(entry, depth) {
+    var wrap = document.createElement("div");
+    var row = document.createElement("div");
+    row.className = "row";
+    row.style.paddingLeft = (8 + depth * 12) + "px";
+
+    var chev = document.createElement("span");
+    chev.className = "chev";
+    chev.textContent = "▶";
+
+    var ico = document.createElement("span");
+    ico.className = "ico";
+    ico.textContent = "📁";
+
+    var name = document.createElement("span");
+    name.className = "name";
+    name.textContent = entry.name;
+    name.title = entry.path;
+
+    row.appendChild(chev);
+    row.appendChild(ico);
+    row.appendChild(name);
+
+    var children = document.createElement("div");
+    children.className = "children";
+    children.style.display = "none";
+
+    var loaded = false;
+    var open = false;
+
+    row.addEventListener("click", function (event) {
+      event.stopPropagation();
+      open = !open;
+      chev.classList.toggle("open", open);
+      children.style.display = open ? "block" : "none";
+      if (!open || loaded) return;
+      loaded = true;
+      children.appendChild(note("加载中…", "spinner"));
+      loadDir(entry.path).then(function (payload) {
+        children.innerHTML = "";
+        if (!payload.entries.length) {
+          children.appendChild(note("空目录", "empty"));
+          return;
+        }
+        payload.entries.forEach(function (child) {
+          children.appendChild(child.dir ? makeDirRow(child, depth + 1) : makeFileRow(child, depth + 1));
+        });
+      }).catch(function (error) {
+        children.innerHTML = "";
+        children.appendChild(note("读取失败：" + error.message, "err"));
+        loaded = false;
+      });
+    });
+
+    wrap.appendChild(row);
+    wrap.appendChild(children);
+    bindDropTarget(row, entry.path);
+    row.addEventListener("contextmenu", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      showMenu(entry, event.clientX, event.clientY);
+    });
+    return wrap;
+  }
+
+  function makeFileRow(entry, depth) {
+    var row = document.createElement("div");
+    row.className = "row";
+    row.style.paddingLeft = (8 + depth * 12) + "px";
+    row.title = entry.path;
+
+    var spacer = document.createElement("span");
+    spacer.className = "chev";
+
+    var ico = document.createElement("span");
+    ico.className = "ico";
+    ico.textContent = icon(entry);
+
+    var name = document.createElement("span");
+    name.className = "name";
+    name.textContent = entry.name;
+
+    var size = document.createElement("span");
+    size.className = "size";
+    size.textContent = human(entry.size);
+
+    row.appendChild(spacer);
+    row.appendChild(ico);
+    row.appendChild(name);
+    row.appendChild(size);
+
+    row.addEventListener("click", function () {
+      var previous = treeEl.querySelector(".row.selected");
+      if (previous) previous.classList.remove("selected");
+      row.classList.add("selected");
+      openFile(entry);
+    });
+    row.addEventListener("contextmenu", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      showMenu(entry, event.clientX, event.clientY);
+    });
+    return row;
+  }
+
+  function fileUrl(path) {
+    return "/api/file?path=" + encodeURIComponent(path);
+  }
+
+  function openFile(entry) {
+    previewEl.innerHTML = "";
+    var type = ext(entry.name);
+
+    var head = document.createElement("div");
+    head.className = "pv-head";
+    var title = document.createElement("span");
+    title.textContent = entry.name;
+    head.appendChild(title);
+    var open = document.createElement("a");
+    open.href = fileUrl(entry.path);
+    open.target = "_blank";
+    open.rel = "noreferrer";
+    open.textContent = "新窗口打开";
+    head.appendChild(open);
+    previewEl.appendChild(head);
+
+    var body = document.createElement("div");
+    body.className = "pv-body";
+    previewEl.appendChild(body);
+
+    if (IMAGE.indexOf(type) >= 0) {
+      var img = document.createElement("img");
+      img.src = fileUrl(entry.path);
+      img.alt = entry.name;
+      body.appendChild(img);
+      return;
+    }
+    if (VIDEO.indexOf(type) >= 0) {
+      var video = document.createElement("video");
+      video.src = fileUrl(entry.path);
+      video.controls = true;
+      video.autoplay = false;
+      video.preload = "metadata";
+      body.appendChild(video);
+      return;
+    }
+    if (AUDIO.indexOf(type) >= 0) {
+      var audio = document.createElement("audio");
+      audio.src = fileUrl(entry.path);
+      audio.controls = true;
+      body.appendChild(audio);
+      return;
+    }
+    if (TEXT.indexOf(type) >= 0) {
+      body.textContent = "加载中…";
+      fetch(fileUrl(entry.path) + "&limit=262144")
+        .then(function (response) { return response.text(); })
+        .then(function (text) {
+          body.innerHTML = "";
+          var pre = document.createElement("pre");
+          pre.textContent = text;
+          body.appendChild(pre);
+        })
+        .catch(function (error) {
+          body.textContent = "读取失败：" + error.message;
+        });
+      return;
+    }
+    body.textContent = "该类型不支持预览，可点右上角在新窗口打开或直接下载。";
+  }
+
+  function boot(path) {
+    current = normalize(path || current);
+    showPath(current);
+    treeEl.innerHTML = "";
+    loadDir(current).then(function (payload) {
+      if (!payload.entries.length) {
+        treeEl.appendChild(note("目录为空", "empty"));
+        return;
+      }
+      payload.entries.forEach(function (entry) {
+        treeEl.appendChild(entry.dir ? makeDirRow(entry, 0) : makeFileRow(entry, 0));
+      });
+    }).catch(function (error) {
+      treeEl.appendChild(note("无法读取 " + current + "：" + error.message, "err"));
+    });
+  }
+
+  document.getElementById("refresh").addEventListener("click", function () { boot(current); });
+
+  document.getElementById("up").addEventListener("click", function () {
+    var parent = current.replace(/\/[^/]+\/?$/, "");
+    boot(parent || "/");
+  });
+
+  // Drag and drop: a directory row takes the files; anywhere else uses the current directory.
+  treeEl.addEventListener("dragenter", function (event) {
+    event.preventDefault();
+    treeEl.classList.add("dragging");
+  });
+  treeEl.addEventListener("dragover", function (event) {
+    event.preventDefault();
+    treeEl.classList.add("dragging");
+  });
+  treeEl.addEventListener("dragleave", function (event) {
+    if (event.target === treeEl) treeEl.classList.remove("dragging");
+  });
+  treeEl.addEventListener("drop", function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    treeEl.classList.remove("dragging");
+    var dir = dropDir || current;
+    dropDir = null;
+    uploadAll(event.dataTransfer && event.dataTransfer.files, dir);
+  });
+
+  document.addEventListener("dragover", function (event) { event.preventDefault(); });
+  document.addEventListener("drop", function (event) { event.preventDefault(); });
+
+  // Right-click on empty tree space: folder actions for the current directory.
+  treeEl.addEventListener("contextmenu", function (event) {
+    if (event.target !== treeEl) return;
+    event.preventDefault();
+    showMenu(null, event.clientX, event.clientY);
+  });
+
+  pathEl.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      boot(pathEl.value);
+      pathEl.blur();
+    } else if (event.key === "Escape") {
+      showPath(current);
+      pathEl.blur();
+    }
+  });
+
+  boot(current);
+})();
+</script>
+</body>
+</html>

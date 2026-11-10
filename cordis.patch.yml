@@ -1,0 +1,6 @@
+# Bundle patch: installing the package into a profile inserts this row.
+# Configure the SSH host either in this entry's `config:` block or in
+# $DSH_HOME/file-explorer.json (example: file-explorer.example.json).
+- insert:
+    - id: file-explorer
+      name: "@bruce_young/dsh-file-explorer"

@@ -1,0 +1,22 @@
+# Example loader entry for dsh-file-explorer.
+# Merge the `insert` block into ~/.dsh/profiles/<profile>/cordis.patch.yml,
+# or run scripts/install.ps1 which does it for you.
+#
+# 203.0.113.10 is a documentation address (TEST-NET-3); replace it with your host.
+- insert:
+    - id: file-explorer
+      name: "@bruce_young/dsh-file-explorer"
+      config:
+        treeRoot: /srv/data
+        treePort: 8910
+        ssh:
+          host: 203.0.113.10
+          port: 22
+          user: root
+          keyFile: C:\Users\you\.ssh\id_rsa
+          knownHosts: C:\Users\you\.ssh\known_hosts
+        sources:
+          - id: project
+            type: local
+            path: C:\work\my-project
+            httpPort: 8911

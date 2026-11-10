@@ -1,0 +1,80 @@
+{
+  "format": 1,
+  "title": {
+    "en": "Bruce's DSH plugins",
+    "zh": "Bruce 的 DSH 插件"
+  },
+  "description": {
+    "en": "Plugins for DeepSeek Harness maintained by BruceYounggit.",
+    "zh": "BruceYounggit 维护的 DeepSeek Harness 插件。"
+  },
+  "metadata": {
+    "categories": {
+      "files": {
+        "title": {
+          "en": "Files",
+          "zh": "文件"
+        }
+      }
+    },
+    "labels": {
+      "windows": {
+        "title": {
+          "en": "Windows",
+          "zh": "Windows"
+        }
+      },
+      "sftp": {
+        "title": {
+          "en": "SFTP",
+          "zh": "SFTP"
+        }
+      }
+    }
+  },
+  "plugins": [
+    {
+      "name": "@bruce_young/dsh-file-explorer",
+      "title": {
+        "en": "File Explorer",
+        "zh": "文件树"
+      },
+      "description": {
+        "en": "VSCode-like file tree for a remote SSH directory, with inline image preview, Range-streamed video and drag-and-drop upload.",
+        "zh": "远程 SSH 目录的 VSCode 风格文件树，图片直接预览、视频流式播放，支持拖拽上传。"
+      },
+      "author": "bruce_young",
+      "homepage": "https://github.com/BruceYounggit/dsh-file-explorer",
+      "repository": {
+        "url": "https://github.com/BruceYounggit/dsh-file-explorer"
+      },
+      "metadata": {
+        "category": "files",
+        "keywords": [
+          "file tree",
+          "sftp",
+          "ssh",
+          "video",
+          "rclone",
+          "upload"
+        ],
+        "labels": [
+          "windows",
+          "sftp"
+        ]
+      },
+      "versions": [
+        {
+          "version": "0.3.2",
+          "publishTimestamp": 1794347453,
+          "source": {
+            "type": "npm"
+          },
+          "engines": {
+            "dsh": ">=0.2.2-rc.1"
+          }
+        }
+      ]
+    }
+  ]
+}
