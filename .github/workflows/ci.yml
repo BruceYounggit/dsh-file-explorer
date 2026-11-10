@@ -1,0 +1,33 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: syntax
+        run: |
+          node --check lib/index.js
+          node --check lib/client.js
+      - name: json
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('package.json','utf8'));console.log('package.json ok')"
+          node -e "JSON.parse(require('fs').readFileSync('index.json','utf8'));console.log('index.json ok')"
+          node -e "JSON.parse(require('fs').readFileSync('file-explorer.example.json','utf8'));console.log('example ok')"
+      - name: page script parses
+        run: |
+          node -e "
+          const html = require('fs').readFileSync('lib/explorer.html','utf8');
+          const match = html.match(/<script>([\s\S]*)<\/script>/);
+          if (!match) throw new Error('no inline script');
+          new Function(match[1].replace('__ROOT__', '\"/\"'));
+          console.log('explorer.html script ok');
+          "

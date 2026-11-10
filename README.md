@@ -1,5 +1,8 @@
 # dsh-file-explorer
 
+[![npm](https://img.shields.io/npm/v/@bruce_young/dsh-file-explorer)](https://www.npmjs.com/package/@bruce_young/dsh-file-explorer)
+[![ci](https://github.com/BruceYounggit/dsh-file-explorer/actions/workflows/ci.yml/badge.svg)](https://github.com/BruceYounggit/dsh-file-explorer/actions/workflows/ci.yml)
+
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 加一个**远程服务器文件树**：左侧栏入口、右侧栏可停靠标签，VSCode 风格的目录树，点开就能看图片、直接播放视频。
 
 A DeepSeek Harness plugin that renders a VSCode-like file tree for a remote SSH directory, with inline image preview and Range-streamed video playback.
