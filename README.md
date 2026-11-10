@@ -98,6 +98,8 @@ cd dsh-file-explorer
 | `ssh.knownHosts` | 空 | known_hosts 路径 |
 | `sources` | `[]` | 额外的本地目录，每个起一个 rclone HTTP 目录（`id`/`path`/`httpPort`） |
 
+> 装好但还没配置 SSH 时，面板不会白屏，而是一个引导页，直接告诉你配置文件路径和示例内容。
+
 ## 工作原理
 
 ```
